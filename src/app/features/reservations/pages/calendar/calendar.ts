@@ -1,0 +1,526 @@
+import { ReservationService } from '../../services/reservation.service';
+import { CommonAreaService } from '../../services/common-area.service';
+import { Reservation } from '../../model/reservation.model';
+import { CreateReservationResource } from '../../model/create-reservation-resource.model';
+import { CommonArea } from '../../model/common-area.model';
+import { UsersService } from '../../../users/services/users.service';
+import { User } from '../../../users/model/user.model';
+import {
+  catchError,
+  forkJoin,
+  map,
+  of,
+  Subject,
+  switchMap
+} from 'rxjs';
+import { ReservationListComponent } from '../../components/reservation-list.component/reservation-list.component';
+import { ReservationDetailComponent } from '../../components/reservation-detail.component/reservation-detail.component';
+import { BuildingsService } from '../../../buildings/services/buildings.service';
+import { UserUnitsService } from '../../../buildings/services/user-units.service';
+import { UserUnit } from '../../../buildings/model/user-unit.model';
+
+import {
+  Component,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  ViewChild,
+  TemplateRef,
+  OnInit,
+} from '@angular/core';
+
+import {
+  isSameMonth,
+} from 'date-fns';
+
+import {
+  provideCalendar,
+  CalendarEvent,
+  CalendarEventAction,
+  CalendarView,
+  CalendarPreviousViewDirective,
+  CalendarTodayDirective,
+  CalendarNextViewDirective,
+  CalendarMonthViewComponent,
+  CalendarDatePipe,
+  DateAdapter,
+} from 'angular-calendar';
+
+import { EventColor } from 'calendar-utils';
+import { FormsModule } from '@angular/forms';
+
+import {
+  provideFlatpickrDefaults,
+} from 'angularx-flatpickr';
+
+import { DatePipe, CommonModule } from '@angular/common';
+import { adapterFactory } from 'angular-calendar/date-adapters/date-fns';
+
+const colors: Record<string, EventColor> = {
+  active: {
+    primary: '#990099',
+    secondary: '#F3D6F3',
+  },
+  cancelled: {
+    primary: '#C62020',
+    secondary: '#FEE2E2',
+  },
+  maintenance: {
+    primary: '#6B7280',
+    secondary: '#E5E7EB',
+  },
+};
+interface ReservationFormState {
+  residentId: number | null;
+  commonAreaId: number | null;
+  reservationDate: string;
+  timeSlot: number;
+  numberOfGuests: number;
+}
+
+@Component({
+  selector: 'app-calendar',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  styleUrl: './calendar.css',
+  templateUrl: './calendar.html',
+  imports: [
+    CommonModule,
+    CalendarPreviousViewDirective,
+    CalendarTodayDirective,
+    CalendarNextViewDirective,
+    CalendarMonthViewComponent,
+    FormsModule,
+    CalendarDatePipe,
+    DatePipe,
+    ReservationListComponent,
+    ReservationDetailComponent
+  ],
+  providers: [
+    provideFlatpickrDefaults(),
+    provideCalendar({ provide: DateAdapter, useFactory: adapterFactory }),
+  ],
+})
+export class Calendar implements OnInit {
+  constructor(
+    private reservationService: ReservationService,
+    private commonAreaService: CommonAreaService,
+    private usersService: UsersService,
+    private buildingsService: BuildingsService,
+    private userUnitsService: UserUnitsService,
+    private cdr: ChangeDetectorRef
+  ) {}
+
+  @ViewChild('modalContent', { static: true }) modalContent!: TemplateRef<any>;
+
+  showCreateReservationModal = false;
+  showDayReservationsModal = false;
+  showReservationDetailModal = false;
+
+  commonAreas: CommonArea[] = [];
+  users: User[] = [];
+  reservations: Reservation[] = [];
+
+  todayDate = new Date().toISOString().split('T')[0];
+  reservationError = '';
+
+  reservationForm: ReservationFormState = {
+    residentId: null,
+    commonAreaId: null,
+    reservationDate: '',
+    timeSlot: 9,
+    numberOfGuests: 1
+  };
+
+  view: CalendarView = CalendarView.Month;
+  CalendarView = CalendarView;
+  viewDate: Date = new Date();
+
+  modalData?: {
+    action: string;
+    event: CalendarEvent;
+  };
+
+  refresh = new Subject<void>();
+  events: CalendarEvent[] = [];
+
+  selectedDayReservations: CalendarEvent[] = [];
+  selectedReservationDetail: any = null;
+  activeDayIsOpen = true;
+
+  actions: CalendarEventAction[] = [
+    {
+      label: '<i class="fas fa-fw fa-pencil-alt"></i>',
+      a11yLabel: 'Edit',
+      onClick: ({ event }: { event: CalendarEvent }): void => {
+        this.handleEvent('Edited', event);
+      },
+    },
+    {
+      label: '<i class="fas fa-fw fa-trash-alt"></i>',
+      a11yLabel: 'Delete',
+      onClick: ({ event }: { event: CalendarEvent }): void => {
+        this.events = this.events.filter(iEvent => iEvent !== event);
+        this.handleEvent('Deleted', event);
+      },
+    },
+  ];
+
+  ngOnInit(): void {
+    this.loadCalendarData();
+  }
+
+  loadCalendarData(): void {
+    forkJoin({
+      reservations: this.reservationService.getAll(),
+      commonAreas: this.commonAreaService.getAll(),
+      users: this.usersService.getAll(),
+      buildings: this.buildingsService.getAll()
+    }).pipe(
+      switchMap(({
+                   reservations,
+                   commonAreas,
+                   users,
+                   buildings
+                 }) => {
+
+        if (buildings.length === 0) {
+          return of({
+            reservations,
+            commonAreas,
+            users,
+            relations: [] as UserUnit[]
+          });
+        }
+
+        const relationRequests = buildings.map(building =>
+          this.userUnitsService
+            .getByBuildingId(building.idBuilding)
+            .pipe(
+              catchError(error => {
+                console.error(
+                  `Error loading residents from building ${building.idBuilding}:`,
+                  error
+                );
+
+                return of([] as UserUnit[]);
+              })
+            )
+        );
+
+        return forkJoin(relationRequests).pipe(
+          map(relationsByBuilding => ({
+            reservations,
+            commonAreas,
+            users,
+            relations: relationsByBuilding.flat()
+          }))
+        );
+      })
+    ).subscribe({
+      next: ({
+               reservations,
+               commonAreas,
+               users,
+               relations
+             }) => {
+        this.commonAreas = commonAreas;
+        this.reservations = reservations;
+
+        /*
+         * Identificadores de usuarios que tienen una relación
+         * activa con alguna unidad.
+         */
+        const activeResidentIds = new Set(
+          relations
+            .filter(relation =>
+              relation.status === 'ACTIVE' &&
+              relation.endDate == null
+            )
+            .map(relation => Number(relation.idUser))
+        );
+
+        /*
+         * Mostrar únicamente:
+         * - Usuarios relacionados con una unidad.
+         * - OWNER o TENANT.
+         * - No inactivos.
+         *
+         * No usamos status === ACTIVE porque los usuarios nuevos
+         * pueden encontrarse como PENDING o VERIFIED.
+         */
+        this.users = users.filter(user => {
+          const hasResidentRole = user.roles?.some(role => {
+            const normalizedRole = role.toUpperCase();
+
+            return (
+              normalizedRole === 'OWNER' ||
+              normalizedRole === 'TENANT'
+            );
+          });
+
+          return (
+            activeResidentIds.has(Number(user.id)) &&
+            hasResidentRole &&
+            user.status !== 'INACTIVE'
+          );
+        });
+
+        this.events = reservations.map(
+          (reservation: Reservation): CalendarEvent => {
+            const area = commonAreas.find(
+              commonArea =>
+                Number(commonArea.id) ===
+                Number(reservation.commonAreaId)
+            );
+
+            const user = users.find(
+              currentUser =>
+                Number(currentUser.id) ===
+                Number(reservation.residentId)
+            );
+
+            return {
+              title:
+                `${area?.name ?? 'Área común'} - ` +
+                `${user?.fullName?.split(' ')[0] ?? 'Residente'}`,
+
+              start: new Date(
+                `${reservation.reservationDate}` +
+                `T${reservation.timeSlot}:00:00`
+              ),
+
+              end: new Date(
+                `${reservation.reservationDate}` +
+                `T${Number(reservation.timeSlot) + 1}:00:00`
+              ),
+
+              color: this.getReservationColor(
+                reservation,
+                area
+              ),
+
+              meta: {
+                reservation,
+                area,
+                user
+              }
+            };
+          }
+        );
+
+        this.refresh.next();
+        this.cdr.markForCheck();
+      },
+
+      error: error => {
+        console.error(
+          'Error loading calendar information:',
+          error
+        );
+
+        this.reservationError =
+          'No se pudo cargar la información del calendario.';
+
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  dayClicked({ date, events }: { date: Date; events: CalendarEvent[] }): void {
+    if (!isSameMonth(date, this.viewDate)) return;
+
+    this.viewDate = date;
+
+    if (events.length === 1) {
+      this.openReservationDetail(events[0]);
+      return;
+    }
+
+    if (events.length > 1) {
+      this.selectedDayReservations = events;
+      this.showDayReservationsModal = true;
+    }
+  }
+
+  getReservationColor(
+    reservation: Reservation,
+    commonArea?: CommonArea
+  ): EventColor {
+    if (commonArea?.status === 'MAINTENANCE') {
+      return colors['maintenance'];
+    }
+
+    if (reservation.status === 'CANCELLED') {
+      return colors['cancelled'];
+    }
+
+    return colors['active'];
+  }
+
+  handleEvent(action: string, event: CalendarEvent): void {
+    this.modalData = { event, action };
+    console.log(action, event);
+  }
+
+  openCreateReservationModal(): void {
+    this.showCreateReservationModal = true;
+  }
+
+  closeCreateReservationModal(): void {
+    this.showCreateReservationModal = false;
+    this.reservationError = '';
+
+    this.reservationForm = {
+      residentId: null,
+      commonAreaId: null,
+      reservationDate: '',
+      timeSlot: 9,
+      numberOfGuests: 1
+    };
+
+    this.cdr.markForCheck();
+  }
+
+  createReservation(): void {
+    this.reservationError = '';
+
+    const selectedArea = this.commonAreas.find(
+      area => String(area.id) === String(this.reservationForm.commonAreaId)
+    );
+
+    const reservationDate = this.reservationForm.reservationDate;
+    const timeSlot = Number(this.reservationForm.timeSlot);
+    const numberOfGuests = Number(this.reservationForm.numberOfGuests);
+
+    if (!reservationDate) {
+      this.reservationError = 'Please select a reservation date.';
+      return;
+    }
+
+    if (reservationDate < this.todayDate) {
+      this.reservationError = 'You cannot reserve a date before today.';
+      return;
+    }
+
+    if (this.reservationForm.residentId == null) {
+      this.reservationError = 'Please select a resident.';
+      return;
+    }
+
+    if (!Number.isInteger(timeSlot) || timeSlot < 0 || timeSlot > 23) {
+      this.reservationError = 'Time slot must be between 0 and 23.';
+      return;
+    }
+    if (this.reservationForm.commonAreaId == null) {
+      this.reservationError = 'Please select a common area.';
+      return;
+    }
+    if (!selectedArea) {
+      this.reservationError = 'Please select a common area.';
+      return;
+    }
+
+    if (!Number.isInteger(numberOfGuests) || numberOfGuests < 1) {
+      this.reservationError = 'Number of guests must be at least 1.';
+      return;
+    }
+
+    if (numberOfGuests > selectedArea.maxCapacity) {
+      this.reservationError = `This area only allows up to ${selectedArea.maxCapacity} guests.`;
+      return;
+    }
+
+    const maxReservationHours = selectedArea.rules?.maxReservationHours ?? 1;
+
+    const newStart = timeSlot;
+    const newEnd = timeSlot + maxReservationHours;
+
+    const hasConflict = this.reservations.some(reservation => {
+      if (reservation.status === 'CANCELLED') return false;
+
+      const sameArea =
+        String(reservation.commonAreaId) === String(this.reservationForm.commonAreaId);
+
+      const sameDate =
+        reservation.reservationDate === reservationDate;
+
+      if (!sameArea || !sameDate) return false;
+
+      const existingArea = this.commonAreas.find(
+        area => Number(area.id) === Number(reservation.commonAreaId)
+      );
+
+      const existingDuration = existingArea?.rules?.maxReservationHours ?? 1;
+
+      const existingStart = Number(reservation.timeSlot);
+      const existingEnd = existingStart + existingDuration;
+
+      return newStart < existingEnd && newEnd > existingStart;
+    });
+
+    if (hasConflict) {
+      this.reservationError =
+        'This area already has a reservation that overlaps with this time slot.';
+      return;
+    }
+
+    const newReservation: CreateReservationResource = {
+      residentId: Number(this.reservationForm.residentId),
+      commonAreaId: Number(this.reservationForm.commonAreaId),
+      reservationDate,
+      timeSlot
+    };
+
+    this.reservationService.createReservation(newReservation).subscribe({
+      next: () => {
+        this.closeCreateReservationModal();
+        this.loadCalendarData();
+      },
+      error: error => {
+        console.error(error);
+        this.reservationError =
+          error?.error?.message ??
+          error?.error ??
+          'No se pudo crear la reserva.';
+      }
+    });
+  }
+
+  get selectedAreaCapacity(): number {
+    const area = this.commonAreas.find(
+      area => String(area.id) === String(this.reservationForm.commonAreaId)
+    );
+
+    return area?.maxCapacity ?? 1;
+  }
+
+  openReservationDetail(event: CalendarEvent): void {
+    this.selectedReservationDetail = event.meta;
+    this.showDayReservationsModal = false;
+    this.showReservationDetailModal = true;
+  }
+
+  closeDayReservationsModal(): void {
+    this.showDayReservationsModal = false;
+    this.selectedDayReservations = [];
+  }
+
+  closeReservationDetailModal(): void {
+    this.showReservationDetailModal = false;
+    this.selectedReservationDetail = null;
+  }
+
+  cancelReservation(detail: any): void {
+    this.reservationService.cancelReservation(detail.reservation.id).subscribe({
+      next: () => {
+        this.closeReservationDetailModal();
+        this.loadCalendarData();
+      },
+      error: error => console.error(error)
+    });
+  }
+
+  formatHour(hour: number): string {
+    return `${hour.toString().padStart(2, '0')}:00`;
+  }
+}

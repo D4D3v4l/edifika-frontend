@@ -1,0 +1,351 @@
+<div class="modal-backdrop" (click)="onCancel()">
+  <div
+    class="modal-container"
+    (click)="$event.stopPropagation()">
+
+    <header class="modal-header">
+      <div>
+        <h2>
+          {{ isCreateMode ? 'Create Unit' : 'Edit Unit' }}
+        </h2>
+
+        <p>
+          {{
+            isCreateMode
+              ? 'Create a new unit and optionally assign an owner.'
+              : 'Update the information of the selected unit.'
+          }}
+        </p>
+      </div>
+
+      <button
+        class="close-btn"
+        type="button"
+        (click)="onCancel()"
+        [disabled]="isSaving">
+        ×
+      </button>
+    </header>
+
+    <form
+      [formGroup]="unitForm"
+      (ngSubmit)="onSubmit()"
+      class="form-body">
+
+      <p
+        class="form-help"
+        *ngIf="isLoadingData">
+        Loading buildings and owners...
+      </p>
+
+      <div class="form-grid">
+
+        <!-- Edificio -->
+        <div class="form-group">
+          <label for="idBuilding">
+            Building
+          </label>
+
+          <select
+            id="idBuilding"
+            formControlName="idBuilding">
+
+            <option [ngValue]="null">
+              Select a building
+            </option>
+
+            <option
+              *ngFor="let building of buildings"
+              [ngValue]="building.idBuilding">
+
+              {{ building.name }} — {{ building.district }}
+            </option>
+          </select>
+
+          <small
+            class="error-text"
+            *ngIf="
+              unitForm.get('idBuilding')?.invalid &&
+              unitForm.get('idBuilding')?.touched
+            ">
+            You must select a building.
+          </small>
+
+          <small
+            class="empty-message"
+            *ngIf="
+              !isLoadingData &&
+              buildings.length === 0
+            ">
+            No buildings are available. Create a building first.
+          </small>
+        </div>
+
+        <!-- Número -->
+        <div class="form-group">
+          <label for="unitNumber">
+            Unit Number
+          </label>
+
+          <input
+            id="unitNumber"
+            type="number"
+            min="0"
+            formControlName="unitNumber">
+
+          <small
+            class="error-text"
+            *ngIf="
+              unitForm.get('unitNumber')?.invalid &&
+              unitForm.get('unitNumber')?.touched
+            ">
+            Unit number is required.
+          </small>
+        </div>
+
+        <!-- Piso -->
+        <div class="form-group">
+          <label for="floor">
+            Floor
+          </label>
+
+          <input
+            id="floor"
+            type="number"
+            min="0"
+            formControlName="floor">
+
+          <small
+            class="error-text"
+            *ngIf="
+              unitForm.get('floor')?.invalid &&
+              unitForm.get('floor')?.touched
+            ">
+            Floor must be greater than or equal to 0.
+          </small>
+        </div>
+
+        <!-- Área cubierta -->
+        <div class="form-group">
+          <label for="coveredArea">
+            Covered Area
+          </label>
+
+          <input
+            id="coveredArea"
+            type="number"
+            min="0"
+            step="0.01"
+            formControlName="coveredArea">
+
+          <small
+            class="error-text"
+            *ngIf="
+              unitForm.get('coveredArea')?.invalid &&
+              unitForm.get('coveredArea')?.touched
+            ">
+            Covered area must be greater than or equal to 0.
+          </small>
+        </div>
+
+        <!-- Área total -->
+        <div class="form-group">
+          <label for="totalArea">
+            Total Area
+          </label>
+
+          <input
+            id="totalArea"
+            type="number"
+            min="0"
+            step="0.01"
+            formControlName="totalArea">
+
+          <small
+            class="error-text"
+            *ngIf="
+              unitForm.get('totalArea')?.invalid &&
+              unitForm.get('totalArea')?.touched
+            ">
+            Total area must be greater than or equal to 0.
+          </small>
+
+          <small
+            class="error-text"
+            *ngIf="
+              unitForm.hasError('totalAreaLessThanCoveredArea') &&
+              (
+                unitForm.get('totalArea')?.touched ||
+                unitForm.get('coveredArea')?.touched
+              )
+            ">
+            Total area must be greater than or equal to covered area.
+          </small>
+        </div>
+
+        <!-- Participación -->
+        <div class="form-group">
+          <label for="participationPercentage">
+            Participation %
+          </label>
+
+          <input
+            id="participationPercentage"
+            type="number"
+            min="0"
+            step="0.01"
+            formControlName="participationPercentage">
+
+          <small
+            class="error-text"
+            *ngIf="
+              unitForm.get('participationPercentage')?.invalid &&
+              unitForm.get('participationPercentage')?.touched
+            ">
+            Participation percentage must be valid.
+          </small>
+        </div>
+
+        <!-- Distribución -->
+        <div class="form-group">
+          <label for="distributionPercentage">
+            Distribution %
+          </label>
+
+          <input
+            id="distributionPercentage"
+            type="number"
+            min="0"
+            step="0.01"
+            formControlName="distributionPercentage">
+
+          <small
+            class="error-text"
+            *ngIf="
+              unitForm.get('distributionPercentage')?.invalid &&
+              unitForm.get('distributionPercentage')?.touched
+            ">
+            Distribution percentage must be valid.
+          </small>
+        </div>
+
+        <!-- Estado -->
+        <div class="form-group">
+          <label for="status">
+            Status
+          </label>
+
+          <select
+            id="status"
+            formControlName="status">
+
+            <option value="AVAILABLE">
+              AVAILABLE
+            </option>
+
+            <option value="OCCUPIED">
+              OCCUPIED
+            </option>
+
+            <option value="MAINTENANCE">
+              MAINTENANCE
+            </option>
+          </select>
+
+          <small
+            class="error-text"
+            *ngIf="
+              unitForm.get('status')?.invalid &&
+              unitForm.get('status')?.touched
+            ">
+            Status must be AVAILABLE, OCCUPIED or MAINTENANCE.
+          </small>
+        </div>
+
+        <!-- Propietario -->
+        <div
+          class="form-group"
+          *ngIf="isCreateMode">
+
+          <label for="idUser">
+            Owner
+          </label>
+
+          <select
+            id="idUser"
+            formControlName="idUser">
+
+            <option [ngValue]="null">
+              No Owner Assigned
+            </option>
+
+            <option
+              *ngFor="let owner of owners"
+              [ngValue]="owner.id">
+
+              {{ owner.fullName }} — {{ owner.email }}
+            </option>
+          </select>
+
+          <small class="form-help">
+            Only users with the OWNER role are displayed.
+          </small>
+
+          <small
+            class="empty-message"
+            *ngIf="
+              !isLoadingData &&
+              owners.length === 0
+            ">
+            No owners are available.
+          </small>
+        </div>
+      </div>
+
+      <p
+        class="error-text general-error"
+        *ngIf="
+          unitForm.invalid &&
+          unitForm.touched
+        ">
+        Please verify the entered values.
+      </p>
+
+      <p
+        class="error-text general-error"
+        *ngIf="errorMessage">
+        {{ errorMessage }}
+      </p>
+
+      <footer class="form-actions">
+        <button
+          type="button"
+          class="btn secondary"
+          (click)="onCancel()"
+          [disabled]="isSaving">
+
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="btn primary"
+          [disabled]="
+            unitForm.invalid ||
+            isSaving ||
+            isLoadingData ||
+            buildings.length === 0
+          ">
+
+          {{
+            isSaving
+              ? 'Saving...'
+              : isCreateMode
+                ? 'Create Unit'
+                : 'Save Changes'
+          }}
+        </button>
+      </footer>
+    </form>
+  </div>
+</div>

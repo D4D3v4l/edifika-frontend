@@ -1,0 +1,176 @@
+<div class="dashboard-wrapper">
+  <div class="header-section">
+    <div class="header-title">
+      <h1>Dashboard Overview</h1>
+      <p>Welcome back, Elena. Here's what's happening at Edifika Residence today.</p>
+    </div>
+    <div class="date-display text-gray" style="display: flex; align-items: center; gap: 8px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+      <span class="bold-text">{{ currentDate | date:'MMM dd, yyyy' | uppercase }}</span>
+    </div>
+  </div>
+
+  <div class="quick-actions">
+
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="grid-column left-column">
+      <div class="card occupancy-card">
+        <div class="card-header">
+          <div class="icon-bg purple-bg-light">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8A0B80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M12 6h.01"></path><path d="M12 10h.01"></path><path d="M12 14h.01"></path><path d="M16 10h.01"></path><path d="M16 14h.01"></path><path d="M8 10h.01"></path><path d="M8 14h.01"></path></svg>
+          </div>
+          <span class="trend purple-text bold-text">+2% MOM</span>
+        </div>
+        <div class="card-subtitle small-text">BUILDING OCCUPANCY</div>
+        <div class="card-value-row">
+          <span class="main-val">{{ occupancyRate }}%</span>
+          <span class="sub-val">{{ occupiedUnits }}/{{ totalUnits }} Units</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="occupancyRate"></div>
+        </div>
+      </div>
+
+      <div class="card tickets-card">
+        <div class="card-header">
+          <div class="icon-bg red-bg-light">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E53935" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          </div>
+          <span class="trend red-text bold-text">PENDING ACTION</span>
+        </div>
+        <div class="card-subtitle small-text">UNPAID INVOICES</div>
+        <div class="card-value-row">
+          <span class="main-val">{{ pendingDebtsCount }}</span>
+          <span class="sub-val">Requires attention</span>
+        </div>
+        <div class="card-divider"></div>
+        <div class="card-footer-text text-gray">
+          Total pending amount: {{ pendingDebtsAmount | currency }}
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-column right-column">
+      <div class="card financial-card h-100">
+        <div class="fin-header">
+          <div>
+            <h2 class="card-title">Financial Performance</h2>
+            <p class="text-gray subtitle-text">Monthly Collections Overview</p>
+          </div>
+          <div class="toggle-btns">
+            <button [class.active]="selectedPeriod === '1'" (click)="setPeriod('1')">1M</button>
+            <button [class.active]="selectedPeriod === '3'" (click)="setPeriod('3')">3M</button>
+            <button [class.active]="selectedPeriod === '6'" (click)="setPeriod('6')">6M</button>
+            <button [class.active]="selectedPeriod === '12'" (click)="setPeriod('12')">1Y</button>
+          </div>
+        </div>
+        
+        <div class="chart-container">
+          <div class="chart-area bars-container">
+            @for (data of monthlyRevenue; track data.month) {
+              <div class="bar-wrapper">
+                <div class="bar" [style.height.%]="(data.amount / maxRevenue) * 100">
+                  <div class="chart-tooltip">{{ data.amount | currency }}</div>
+                </div>
+              </div>
+            }
+          </div>
+          <div class="x-axis-labels text-gray">
+            @for (label of chartLabels; track label) {
+              <span style="flex: 1; text-align: center;">{{ label }}</span>
+            }
+          </div>
+        </div>
+        
+        <div class="card-divider mb-3"></div>
+
+        <div class="fin-footer">
+          <div class="fin-stat">
+            <span class="label small-text">TOTAL COLLECTED</span>
+            <span class="val large-val">{{ totalCollected | currency }}</span>
+          </div>
+          <div class="fin-stat">
+            <span class="label small-text">CURRENT DELINQUENCY</span>
+            <span class="val large-val red-text">{{ delinquencyRate }}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-column left-column">
+      <div class="card list-card">
+        <div class="list-header space-between">
+          <h2 class="card-title">Pending Reservations</h2>
+          <a routerLink="/app/common-areas" class="view-all purple-text bold-text" style="cursor: pointer;">View All</a>
+        </div>
+        <div class="list-content">
+          <!-- Items -->
+          @for (res of pendingReservations; track res.id) {
+          <div class="list-item">
+            <div class="item-icon-wrapper pink-bg-light">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8A0B80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20"></path><path d="M12 2v20"></path><path d="M20 16v4"></path><path d="M4 16v4"></path></svg>
+            </div>
+            <div class="item-details">
+              <span class="title">{{ res.areaName }}</span>
+              <span class="desc text-gray">Resident ID: {{ res.residentId }}</span>
+            </div>
+            <div class="item-meta">
+              <span class="date-label text-gray">DATE</span>
+              <span class="date-val">{{ res.formattedDate }}</span>
+            </div>
+            <div class="item-actions">
+              <button
+                type="button"
+                class="btn-icon btn-reject"
+                aria-label="Cancel reservation"
+                title="Cancel reservation"
+                (click)="cancelReservation(res.id)"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-column right-column">
+      <div class="card list-card p-0">
+        <div class="p-4 pb-0">
+          <h2 class="card-title mb-1">Community Wall</h2>
+          <p class="text-gray subtitle-text mb-4">Latest updates from Residents</p>
+        </div>
+        <div class="list-content px-4">
+          @for (post of communityPosts; track post.id) {
+          <div class="wall-item">
+            <div class="author-info">
+              <img [src]="post.imageUrl" alt="User" class="avatar" />
+              <span class="author-name">{{ post.title }}</span>
+            </div>
+            <p class="wall-text">"{{ post.content }}"</p>
+            <span class="wall-time text-gray small-text">{{ post.createdAt | date:'short' }}</span>
+          </div>
+          }
+        </div>
+        <div class="p-4 pt-0">
+          <button routerLink="/app/community-wall" class="btn-full-width">Open Community Wall</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
