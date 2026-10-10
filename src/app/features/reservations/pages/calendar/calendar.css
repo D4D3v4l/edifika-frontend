@@ -56,11 +56,13 @@ pre {
 
 .calendar-legend {
   display: flex;
+  flex-wrap: wrap;
   gap: 22px;
   padding: 18px 24px;
   background: #fafafa;
   font-size: 11px;
   letter-spacing: 1.5px;
+  text-transform: uppercase;
   color: #4b5563;
 }
 
@@ -77,17 +79,10 @@ pre {
   display: inline-block;
 }
 
-.active {
-  background: #990099;
-}
-
-
-.cancelled {
-  background: #c62020;
-}
-
-.maintenance {
-  background: #6b7280;
+.calendar-legend-empty {
+  letter-spacing: normal;
+  text-transform: none;
+  color: #9ca3af;
 }
 
 :host ::ng-deep .cal-month-view {
@@ -172,17 +167,22 @@ pre {
 
 :host ::ng-deep .custom-event {
   width: 100%;
-  min-height: 38px;
+  min-height: 34px;
+  box-sizing: border-box;
   border-radius: 4px;
-  padding: 6px 8px;
-  color: white;
-  font-size: 10px;
+  border-left: 3px solid transparent;
+  padding: 8px 10px;
+  font-size: 11px;
   font-weight: 700;
   line-height: 1.2;
-  white-space: normal;
+  white-space: nowrap;
   overflow: hidden;
-  word-break: break-word;
+  text-overflow: ellipsis;
   cursor: pointer;
+}
+
+:host ::ng-deep .custom-event:hover {
+  filter: brightness(0.96);
 }
 :host ::ng-deep .custom-event-title {
   color: white !important;
@@ -202,7 +202,7 @@ pre {
   padding: 6px 8px !important;
   margin: 0 !important;
 
-  color: white !important;
+  background: #f3f4f6 !important;
 
   font-family: 'Inter', sans-serif;
   font-size: 11px;
@@ -210,19 +210,19 @@ pre {
   line-height: 1.2;
 
   display: block !important;
-  white-space: normal;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 :host ::ng-deep .cal-month-view .cal-event-title {
-  color: white !important;
+  color: #111827 !important;
   display: block !important;
   text-decoration: none !important;
 }
 
 :host ::ng-deep .cal-month-view .cal-event a {
-  color: white !important;
+  color: #111827 !important;
   text-decoration: none !important;
 }
 .add-reservation-btn {

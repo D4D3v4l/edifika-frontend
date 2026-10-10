@@ -22,8 +22,10 @@ import { CommonAreaService } from '../../features/reservations/services/common-a
 export class CommonAreas implements OnInit {
   showCreateModal = false;
   showEditModal = false;
+  showHistoryModal = false;
 
   selectedArea: CommonArea | null = null;
+  commonAreas: CommonArea[] = [];
 
   areaForm!: FormGroup;
   editForm!: FormGroup;
@@ -38,6 +40,36 @@ export class CommonAreas implements OnInit {
   ngOnInit(): void {
     this.areaForm = this.buildAreaForm();
     this.editForm = this.buildAreaForm();
+    this.loadAreas();
+  }
+
+  /**
+   * Areas que quedaron fuera de servicio. Alimenta la tarjeta
+   * "Maintenance Schedule" del panel lateral.
+   */
+  get areasInMaintenance(): CommonArea[] {
+    return this.commonAreas.filter(area => area.status === 'MAINTENANCE');
+  }
+
+  get maintenanceSummary(): string {
+    const areas = this.areasInMaintenance;
+
+    if (areas.length === 0) {
+      return 'No hay áreas en mantenimiento.';
+    }
+
+    const names = areas.map(area => area.name).join(', ');
+
+    return areas.length === 1
+      ? `Mantenimiento programado para ${names}.`
+      : `Mantenimiento programado en ${areas.length} áreas: ${names}.`;
+  }
+
+  private loadAreas(): void {
+    this.commonAreaService.getAll().subscribe({
+      next: areas => (this.commonAreas = areas),
+      error: error => console.error(error),
+    });
   }
 
   private buildAreaForm(): FormGroup {
@@ -124,7 +156,18 @@ export class CommonAreas implements OnInit {
     });
   }
   private refreshCommonAreas(): void {
+    this.loadAreas();
     this.commonAreaList?.loadAreas();
+  }
+
+  openHistoryModal(area: CommonArea): void {
+    this.selectedArea = area;
+    this.showHistoryModal = true;
+  }
+
+  closeHistoryModal(): void {
+    this.showHistoryModal = false;
+    this.selectedArea = null;
   }
   openEditModal(area: CommonArea): void {
     this.selectedArea = area;

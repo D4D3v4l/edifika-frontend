@@ -11,13 +11,25 @@
 
     <div class="area-list">
       <app-common-area-list   (editRules)="openEditModal($event)"
-                              (statusChanged)="updateAreaStatus($event)">
+                              (statusChanged)="updateAreaStatus($event)"
+                              (viewHistory)="openHistoryModal($event)">
 
         ></app-common-area-list>
 
       <button class="add-area-button" (click)="openCreateModal()">
         Add New Area
       </button>
+    </div>
+
+    <div class="maintenance-card">
+      <div class="maintenance-icon">
+        <span class="material-icons">handyman</span>
+      </div>
+
+      <div class="maintenance-content">
+        <h3>Maintenance Schedule</h3>
+        <p>{{ maintenanceSummary }}</p>
+      </div>
     </div>
   </div>
 </div>
@@ -226,5 +238,62 @@
         </button>
       </div>
     </form>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="showHistoryModal && selectedArea">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>{{ selectedArea.name }}</h2>
+      <button class="close-button" (click)="closeHistoryModal()">×</button>
+    </div>
+
+    <div class="rule-summary">
+      <div class="rule-row">
+        <span>Max reservation hours</span>
+        <strong>{{ selectedArea.rules?.maxReservationHours ?? 1 }}</strong>
+      </div>
+
+      <div class="rule-row">
+        <span>Price</span>
+        <strong>$ {{ selectedArea.rules?.price ?? 0 }}</strong>
+      </div>
+
+      <div class="rule-row">
+        <span>Guarantee amount</span>
+        <strong>$ {{ selectedArea.rules?.guaranteeAmount ?? 0 }}</strong>
+      </div>
+
+      <div class="rule-row">
+        <span>Penalty</span>
+        <strong>
+          $ {{ selectedArea.rules?.penaltyAmount ?? 0 }}
+          ({{ selectedArea.rules?.penaltyHoursBefore ?? 0 }} h antes)
+        </strong>
+      </div>
+
+      <div class="rule-row">
+        <span>Allow cancellation</span>
+        <strong>{{ selectedArea.rules?.allowCancellation ? 'Sí' : 'No' }}</strong>
+      </div>
+
+      <div class="rule-row">
+        <span>Requires approval</span>
+        <strong>{{ selectedArea.rules?.requiresApproval ? 'Sí' : 'No' }}</strong>
+      </div>
+
+      <div class="rule-row">
+        <span>Max capacity</span>
+        <strong>{{ selectedArea.maxCapacity }} personas</strong>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <div class="modal-actions-single">
+        <button type="button" class="save-button" (click)="closeHistoryModal()">
+          Close
+        </button>
+      </div>
+    </div>
   </div>
 </div>

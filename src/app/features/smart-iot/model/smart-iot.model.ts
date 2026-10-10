@@ -40,9 +40,17 @@ export interface SmartIotSummaryCard {
   lastEvent: SmartIotEvent | null;
 }
 
+export interface SmartIotDashboardData {
+  cards: SmartIotSummaryCard[];
+  activityFrom: Date | null;
+  activityTo: Date | null;
+}
+
 export interface SmartIotData {
   isDemo: boolean;
   lighting: LightingEvent[];
   accessDenied: AccessDeniedEvent[];
   irrigation: IrrigationEvent[];
+  activityFrom: Date | null;
+  activityTo: Date | null;
 }

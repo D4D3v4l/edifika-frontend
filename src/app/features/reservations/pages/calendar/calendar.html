@@ -16,7 +16,7 @@
       <button
         mwlCalendarToday
         [(viewDate)]="viewDate">
-        {{ viewDate | date:'MMMM' }}
+        Today
       </button>
 
       <button
@@ -42,7 +42,9 @@
         @for (event of day.events; track event.title) {
           <div
             class="custom-event"
-            [style.background]="event.color?.primary"
+            [style.background]="event.color?.secondary"
+            [style.border-left-color]="event.color?.primary"
+            [style.color]="event.color?.primary"
             (click)="$event.stopPropagation(); openReservationDetail(event)">
             {{ event.title }}
           </div>
@@ -61,9 +63,16 @@
   </mwl-calendar-month-view>
 
   <div class="calendar-legend">
-    <span><i class="active"></i> ACTIVE</span>
-    <span><i class="cancelled"></i> CANCELLED</span>
-    <span><i class="maintenance"></i> MAINTENANCE</span>
+    @for (entry of legend; track entry.label) {
+      <span>
+        <i [style.background]="entry.color"></i>
+        {{ entry.label }}
+      </span>
+    }
+
+    @if (legend.length === 0) {
+      <span class="calendar-legend-empty">Sin reservas registradas</span>
+    }
   </div>
 </div>
 <div class="modal-backdrop" *ngIf="showCreateReservationModal">

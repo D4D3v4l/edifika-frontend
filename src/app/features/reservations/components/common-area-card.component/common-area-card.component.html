@@ -7,31 +7,29 @@
     <div class="card-content">
       <h3>{{ commonArea.name }}</h3>
 
-      <p class="type">
-        {{ commonArea.type }}
-      </p>
-
-      <p>
-        Capacidad: {{ commonArea.maxCapacity }} personas
-      </p>
-
-      <span class="status">
-      {{ areaStatus }}
-    </span>
+      <p class="badge">{{ areaBadge }}</p>
     </div>
+
     <div class="card-btn-container">
       <label class="switch">
         <input
           type="checkbox"
           [checked]="commonArea.status === 'AVAILABLE'"
-          (change)="toggleStatus()">>
+          (change)="toggleStatus()">
         <span class="slider"></span>
       </label>
     </div>
   </div>
 
+  <div class="card-actions">
+    <button class="btn-primary" (click)="openEditRules(commonArea)">Edit Rules</button>
 
-  <div class="card-actions" >
-    <button class="btn-primary" (click)="openEditRules(commonArea)">Editar Reglas</button>
+    <button
+      class="btn-icon"
+      type="button"
+      title="Ver reglas actuales"
+      (click)="openHistory()">
+      <span class="material-icons">history</span>
+    </button>
   </div>
 </div>

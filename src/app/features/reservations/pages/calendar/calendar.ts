@@ -47,6 +47,12 @@ import {
 
 import { EventColor } from 'calendar-utils';
 import { FormsModule } from '@angular/forms';
+import {
+  buildAreaColorMap,
+  CANCELLED_COLOR,
+  FALLBACK_AREA_COLOR,
+  tint,
+} from '../../utils/area-color.util';
 
 import {
   provideFlatpickrDefaults,
@@ -55,20 +61,11 @@ import {
 import { DatePipe, CommonModule } from '@angular/common';
 import { adapterFactory } from 'angular-calendar/date-adapters/date-fns';
 
-const colors: Record<string, EventColor> = {
-  active: {
-    primary: '#990099',
-    secondary: '#F3D6F3',
-  },
-  cancelled: {
-    primary: '#C62020',
-    secondary: '#FEE2E2',
-  },
-  maintenance: {
-    primary: '#6B7280',
-    secondary: '#E5E7EB',
-  },
-};
+interface LegendEntry {
+  label: string;
+  color: string;
+}
+
 interface ReservationFormState {
   residentId: number | null;
   commonAreaId: number | null;
@@ -142,6 +139,9 @@ export class Calendar implements OnInit {
 
   refresh = new Subject<void>();
   events: CalendarEvent[] = [];
+
+  areaColors = new Map<number, string>();
+  legend: LegendEntry[] = [];
 
   selectedDayReservations: CalendarEvent[] = [];
   selectedReservationDetail: any = null;
@@ -225,6 +225,7 @@ export class Calendar implements OnInit {
              }) => {
         this.commonAreas = commonAreas;
         this.reservations = reservations;
+        this.areaColors = buildAreaColorMap(commonAreas);
 
         /*
          * Identificadores de usuarios que tienen una relación
@@ -308,6 +309,8 @@ export class Calendar implements OnInit {
           }
         );
 
+        this.buildLegend();
+
         this.refresh.next();
         this.cdr.markForCheck();
       },
@@ -342,19 +345,67 @@ export class Calendar implements OnInit {
     }
   }
 
+  /**
+   * Cada area comun tiene su propio color. Las reservas canceladas
+   * siempre se muestran en rojo.
+   */
   getReservationColor(
     reservation: Reservation,
     commonArea?: CommonArea
   ): EventColor {
-    if (commonArea?.status === 'MAINTENANCE') {
-      return colors['maintenance'];
-    }
-
     if (reservation.status === 'CANCELLED') {
-      return colors['cancelled'];
+      return this.toEventColor(CANCELLED_COLOR);
     }
 
-    return colors['active'];
+    const primary =
+      (commonArea && this.areaColors.get(Number(commonArea.id))) ||
+      FALLBACK_AREA_COLOR;
+
+    return this.toEventColor(primary);
+  }
+
+  private toEventColor(primary: string): EventColor {
+    return {
+      primary,
+      secondary: tint(primary),
+    };
+  }
+
+  /**
+   * Leyenda al pie del calendario: un color por area utilizada
+   * y, al final, el color reservado para las reservas canceladas.
+   */
+  private buildLegend(): void {
+    const entries: LegendEntry[] = [];
+    const seen = new Set<number>();
+
+    for (const event of this.events) {
+      const reservation = event.meta?.reservation as Reservation | undefined;
+      const area = event.meta?.area as CommonArea | undefined;
+
+      if (!area || reservation?.status === 'CANCELLED') {
+        continue;
+      }
+
+      const areaId = Number(area.id);
+
+      if (seen.has(areaId)) {
+        continue;
+      }
+
+      seen.add(areaId);
+
+      entries.push({
+        label: area.name,
+        color: this.areaColors.get(areaId) ?? FALLBACK_AREA_COLOR,
+      });
+    }
+
+    if (this.reservations.some(item => item.status === 'CANCELLED')) {
+      entries.push({ label: 'Cancelled', color: CANCELLED_COLOR });
+    }
+
+    this.legend = entries;
   }
 
   handleEvent(action: string, event: CalendarEvent): void {

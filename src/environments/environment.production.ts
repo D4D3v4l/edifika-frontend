@@ -1,8 +1,12 @@
 export const environment = {
   production: true,
 
-  serverBaseUrl:
-    'https://edifika-apigateway.onrender.com/api/v1',
+  /*
+   * URL relativa: el front y la fake API se sirven desde el mismo origen en
+   * Vercel. vercel.json reescribe /api/v1/* hacia la Serverless Function
+   * /api/fake-api, por eso no hay CORS ni URLs absolutas que mantener.
+   */
+  serverBaseUrl: '/api/v1',
 
   authenticationEndpointPath: '/authentication',
   userEndpointPath: '/users',

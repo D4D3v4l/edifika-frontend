@@ -2,39 +2,77 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.1.6.
 
-## Development server
+## Arquitectura
 
-To start a local development server, run:
+El proyecto se despliega en **Vercel como un único proyecto** que sirve dos cosas:
+
+- El **front Angular** como archivos estáticos (`dist/Edifika/browser`).
+- La **fake API** (`json-server`) como Serverless Function en `/api/fake-api`.
+
+`vercel.json` hace que ambas vivan en el **mismo origen**, así que no hay CORS
+ni URLs absolutas que mantener:
+
+| Petición                | Se sirve con                                                 |
+| ----------------------- | ----------------------------------------------------------- |
+| `/api/v1/<cualquiera>`  | Rewrite → `/api/fake-api/<cualquiera>` (Serverless Function) |
+| `/` y rutas del router  | Rewrite → `/index.html` (fallback de la SPA)                 |
+| `/assets/*`, `/*.js`    | Archivos estáticos (se resuelven antes de los rewrites)      |
+
+En producción `environment.serverBaseUrl` es `/api/v1` (URL **relativa**).
+
+### Estructura de la fake API
+
+- `server/app.js` — construye la app de Express y la **exporta** (sin `listen`).
+- `server/server.js` — entrypoint de desarrollo local (`npm run api`).
+- `api/fake-api.js` — la Serverless Function que usa Vercel.
+- `server/db.json` — los datos semilla.
+
+`json-server` usa el adaptador `FileSync` de lowdb cuando recibe una ruta, y el
+adaptador `Memory` cuando recibe un objeto ya parseado. Como el filesystem de
+Vercel es de **solo lectura**, `app.js` detecta `process.env.VERCEL` y usa la
+base de datos **en memoria**.
+
+> **Consecuencia:** los datos viven en memoria. Cada arranque en frío de la
+> función parte de nuevo desde `server/db.json`, así que lo que crees o edites
+> durante una sesión puede desaparecer cuando la función se recicla. Es el
+> comportamiento esperado de una fake API en un entorno serverless. En local
+> (`npm run api`) sí se persiste en `db.json`.
+
+## Desarrollo
+
+Para levantar el front y la fake API, abre dos terminales:
 
 ```bash
-ng serve
+npm run api    # fake API en http://localhost:3000
+npm start      # front en http://localhost:4200
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+`environment.serverBaseUrl` ya apunta a `http://localhost:3000/api/v1`, y la fake
+API acepta tanto `/api/v1/...` como las rutas sin ese prefijo.
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Build
 
 ```bash
-ng generate component component-name
+npm run build
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Genera `dist/Edifika/browser`. La configuración `production` de `angular.json`
+incluye un `fileReplacement` que sustituye `environment.ts` por
+`environment.production.ts`; sin él el build de producción seguiría apuntando a
+`localhost:3000`.
+
+## Despliegue en Vercel
+
+1. Importa el repositorio en Vercel.
+2. Vercel lee `vercel.json`, que ya define build, output y rewrites, así que no
+   hay que configurar nada a mano en el dashboard.
+3. Deploy.
+
+Para probar los rewrites en local necesitas la CLI de Vercel:
 
 ```bash
-ng generate --help
+npx vercel dev
 ```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
 ## Running unit tests
 
@@ -44,16 +82,6 @@ To execute unit tests with the [Karma](https://karma-runner.github.io) test runn
 ng test
 ```
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
 ## Additional Resources
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+For more information on using the Angular CLI, such as commands, then refer to the [Angular CLI Overview & Reference](https://angular.dev/tools/cli) page.

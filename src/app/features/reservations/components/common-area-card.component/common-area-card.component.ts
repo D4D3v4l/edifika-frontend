@@ -11,6 +11,7 @@ export class CommonAreaCardComponent {
   @Input() commonArea!: CommonArea;
   @Output() editRules = new EventEmitter<CommonArea>();
   @Output() statusChanged = new EventEmitter<CommonArea>();
+  @Output() viewHistory = new EventEmitter<CommonArea>();
 
   constructor() { }
   get areaIcon(): string {
@@ -31,6 +32,30 @@ export class CommonAreaCardComponent {
         return 'apartment';
     }
   }
+
+  /**
+   * Texto corto que resume la regla mas relevante del area.
+   * Se evalua en orden de prioridad y solo se muestra el primero
+   * que aplique.
+   */
+  get areaBadge(): string {
+    const area = this.commonArea;
+
+    if (area.bookingType === 'EXCLUSIVE') {
+      return 'PREMIUM AMENITY';
+    }
+
+    if (!area.rules?.requiresApproval) {
+      return 'OPEN ACCESS';
+    }
+
+    if ((area.rules?.price ?? 0) > 0) {
+      return 'FEE APPLIES';
+    }
+
+    return `CAPACITY: ${area.maxCapacity}`;
+  }
+
   get areaStatus(): string {
     return this.commonArea?.status === 'AVAILABLE'
       ? 'Disponible'
@@ -38,6 +63,9 @@ export class CommonAreaCardComponent {
   }
   openEditRules(area: CommonArea) {
     this.editRules.emit(area);
+  }
+  openHistory() {
+    this.viewHistory.emit(this.commonArea);
   }
   toggleStatus() {
     const updatedArea: CommonArea = {

@@ -2,12 +2,11 @@ import {Component, EventEmitter, OnInit, Output} from '@angular/core';
 import { CommonAreaCardComponent } from '../common-area-card.component/common-area-card.component';
 import { CommonAreaService } from '../../services/common-area.service';
 import { CommonArea } from '../../model/common-area.model';
-import {NgForOf} from '@angular/common';
 
 @Component({
   selector: 'app-common-area-list',
   standalone: true,
-  imports: [CommonAreaCardComponent, NgForOf],
+  imports: [CommonAreaCardComponent],
   templateUrl: './common-area-list.component.html',
   styleUrl: './common-area-list.component.css',
 })
@@ -15,6 +14,7 @@ export class CommonAreaListComponent implements OnInit {
   commonAreas: CommonArea[] = [];
   @Output() editRules = new EventEmitter<CommonArea>();
   @Output() statusChanged = new EventEmitter<CommonArea>();
+  @Output() viewHistory = new EventEmitter<CommonArea>();
 
   constructor(private commonAreaService: CommonAreaService) {}
 
@@ -40,5 +40,8 @@ export class CommonAreaListComponent implements OnInit {
   }
   onStatusChanged(area: CommonArea) {
     this.statusChanged.emit(area);
+  }
+  onViewHistory(area: CommonArea) {
+    this.viewHistory.emit(area);
   }
 }
