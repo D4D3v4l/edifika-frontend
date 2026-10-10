@@ -178,6 +178,8 @@ export class UnitsResidentsPage implements OnInit {
     users: User[]
   ): UnitResidentView {
 
+    const unitId = this.resolveUnitId(unit);
+
     let displayedStatus = 'VACANT';
 
     if (unit.status === 'MAINTENANCE') {
@@ -190,7 +192,7 @@ export class UnitsResidentsPage implements OnInit {
 
     const activeRelation = residents.find(
       resident =>
-        Number(resident.idUnit) === Number(unit.idUnit) &&
+        Number(resident.idUnit) === unitId &&
         resident.status === 'ACTIVE' &&
         !resident.endDate
     );
@@ -203,7 +205,7 @@ export class UnitsResidentsPage implements OnInit {
       : undefined;
 
     return {
-      unitId: unit.idUnit,
+      unitId: unitId,
       unitNumber: unit.unitNumber,
 
       tower:
@@ -247,11 +249,21 @@ export class UnitsResidentsPage implements OnInit {
     }
   }
 
+  /*
+   * La fake API solo garantiza el `id` del recurso, por eso se usa
+   * `idUnit` y se cae a `id` cuando no viene informado.
+   */
+  private resolveUnitId(unit: Unit): number {
+    return Number(unit.idUnit) > 0
+      ? Number(unit.idUnit)
+      : Number(unit.id);
+  }
+
   editRow(row: UnitResidentView): void {
     this.selectedUnit =
       this.units.find(
         unit =>
-          Number(unit.idUnit) ===
+          this.resolveUnitId(unit) ===
           Number(row.unitId)
       ) ?? null;
 
