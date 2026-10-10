@@ -1,0 +1,55 @@
+<section class="records-page">
+  <a class="back-link" routerLink="/app/smart-iot">
+    <span class="material-icons-outlined">arrow_back</span>
+    Volver a SmartIOT
+  </a>
+
+  <div class="page-header">
+    <div>
+      <h1>Iluminaria</h1>
+      <p>Registro de luces encendidas por los sensores de las zonas comunes.</p>
+    </div>
+    <div class="total-chip">Total: {{ events.length }}</div>
+  </div>
+
+  <div class="demo-banner">
+    Datos de demostración. Los registros y usuarios son ficticios; no representan actividad real.
+  </div>
+
+  @if (errorMessage) {
+    <div class="error-banner">{{ errorMessage }}</div>
+  }
+
+  @if (isLoading) {
+    <div class="state-card">Cargando activaciones de luminarias...</div>
+  } @else {
+    <div class="table-card">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Hora</th>
+              <th>Zona</th>
+              <th>Número de foco encendido</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (event of events; track event.id) {
+              <tr>
+                <td>{{ formatDate(event.occurredAt) }}</td>
+                <td>{{ formatTime(event.occurredAt) }}</td>
+                <td>{{ event.zone }}</td>
+                <td><strong>{{ event.device }}</strong></td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="empty-cell">No hay activaciones registradas.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</section>

@@ -1,0 +1,63 @@
+<section class="iot-page">
+  <div class="page-header">
+    <span class="eyebrow">SISTEMA IoT</span>
+    <h1>SmartIOT</h1>
+    <p>
+      Consulta la actividad de los sistemas inteligentes de tu residencial:
+      iluminación, accesos y riego en un solo lugar.
+    </p>
+  </div>
+
+  <div class="demo-banner">
+    Datos de demostración. Los registros y usuarios son ficticios; no representan actividad real.
+  </div>
+
+  @if (errorMessage) {
+    <div class="error-banner">{{ errorMessage }}</div>
+  }
+
+  @if (isLoading) {
+    <div class="state-card">Cargando registros SmartIOT...</div>
+  } @else {
+    <div class="system-list">
+      @for (card of cards; track card.type) {
+        <article class="system-card">
+          <div class="system-icon">
+            <span class="material-icons-outlined">{{ card.icon }}</span>
+          </div>
+
+          <div class="system-content">
+            <div class="system-title-row">
+              <h2>{{ card.title }}</h2>
+              <span>{{ card.count }} {{ card.metricLabel }}</span>
+            </div>
+
+            <p>{{ card.description }}</p>
+
+            <div class="last-event">
+              <strong>Último registro</strong>
+              <span>{{ lastEventLabel(card.lastEvent) }}</span>
+            </div>
+          </div>
+
+          <a class="primary-button" [routerLink]="card.route">
+            Ver registros
+          </a>
+        </article>
+      } @empty {
+        <div class="state-card">No hay sistemas inteligentes configurados.</div>
+      }
+    </div>
+  }
+
+  <div class="trace-card">
+    <span class="material-icons-outlined">history</span>
+    <div>
+      <h2>Trazabilidad de eventos</h2>
+      <p>
+        Cada sistema mantiene registros con fecha y hora para consulta administrativa.
+        Estas pantallas no activan dispositivos físicos ni exponen credenciales.
+      </p>
+    </div>
+  </div>
+</section>

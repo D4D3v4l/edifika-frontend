@@ -1,0 +1,192 @@
+<section class="doc-page">
+  <div class="page-header">
+    <div>
+      <span class="eyebrow">BIBLIOTECA CENTRAL</span>
+      <h1>Centro de Documentación</h1>
+      <p>
+        Gestión centralizada de normativas, manuales operativos y protocolos de
+        emergencia para la administración residencial.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      class="primary-button"
+      [disabled]="!canUploadDocuments"
+      (click)="openUploadForm()">
+      <span class="material-icons-outlined">upload_file</span>
+      Subir Nuevo Protocolo
+    </button>
+  </div>
+
+  @if (isDemo) {
+    <div class="demo-banner">
+      Datos de demostración. Los documentos y contactos son ficticios; no representan
+      documentación real del edificio.
+    </div>
+  }
+
+  @if (!canUploadDocuments) {
+    <div class="info-banner">
+      Tu rol actual permite consultar documentos, pero no subir, editar ni eliminar archivos.
+    </div>
+  }
+
+  @if (errorMessage) {
+    <div class="error-banner">{{ errorMessage }}</div>
+  }
+
+  @if (isLoading) {
+    <div class="state-card">Cargando documentación...</div>
+  } @else {
+    <div class="doc-grid">
+      <div class="operations-card card">
+        <div class="section-heading">
+          <span class="material-icons-outlined">emergency_home</span>
+          <h2>Centro de Operaciones de Emergencia</h2>
+        </div>
+
+        <div class="protocol-list">
+          @for (protocol of protocols; track protocol.id) {
+            <article class="protocol-item">
+              <div class="icon-pill">
+                <span class="material-icons-outlined">{{ protocol.icon }}</span>
+              </div>
+
+              <div>
+                <h3>{{ protocol.title }}</h3>
+                <p>{{ protocol.description }}</p>
+              </div>
+
+              <button type="button" class="ghost-button" (click)="openDocument(protocol)">
+                Abrir documento
+              </button>
+            </article>
+          }
+        </div>
+      </div>
+
+      <aside class="contacts-card card">
+        <div class="section-heading compact">
+          <span class="material-icons-outlined">contact_phone</span>
+          <h2>Contactos críticos</h2>
+        </div>
+
+        @for (contact of contacts; track contact.id) {
+          <div class="contact-row">
+            <span class="material-icons-outlined">{{ contact.icon }}</span>
+            <div>
+              <strong>{{ contact.label }}</strong>
+              <p>{{ contact.value }}</p>
+              <small>{{ contact.note }}</small>
+            </div>
+          </div>
+        }
+
+        <button type="button" class="secondary-button">Ver Directorio Completo</button>
+      </aside>
+    </div>
+
+    <div class="library-card card">
+      <div class="library-header">
+        <div>
+          <h2>Biblioteca de documentos</h2>
+          <p>Filtra la documentación por categoría operativa.</p>
+        </div>
+      </div>
+
+      <div class="tabs" role="tablist">
+        @for (tab of tabs; track tab.id) {
+          <button
+            type="button"
+            role="tab"
+            [class.active]="selectedCategory === tab.id"
+            (click)="selectCategory(tab.id)">
+            {{ tab.label }}
+          </button>
+        }
+      </div>
+
+      <div class="document-list">
+        @for (document of filteredDocuments; track document.id) {
+          <article class="document-card">
+            <div class="doc-icon">
+              <span class="material-icons-outlined">{{ document.icon }}</span>
+            </div>
+
+            <div class="document-content">
+              <div class="document-title-row">
+                <h3>{{ document.name }}</h3>
+                @if (document.version) {
+                  <span class="version-chip">{{ document.version }}</span>
+                }
+              </div>
+              <p>{{ document.description }}</p>
+              <div class="document-meta">
+                <span>Actualizado: {{ formatDate(document.updatedAt) }}</span>
+                <span>{{ document.fileType }} · {{ document.fileSize }}</span>
+              </div>
+            </div>
+
+            <div class="document-actions">
+              <button type="button" class="icon-button" title="Visualizar" (click)="openDocument(document)">
+                <span class="material-icons-outlined">visibility</span>
+              </button>
+              <button type="button" class="icon-button" title="Descargar" (click)="downloadDocument(document)">
+                <span class="material-icons-outlined">download</span>
+              </button>
+            </div>
+          </article>
+        } @empty {
+          <div class="state-card">No hay documentos para esta categoría.</div>
+        }
+      </div>
+    </div>
+  }
+</section>
+
+@if (showUploadForm) {
+  <div class="modal-backdrop" (click)="closeUploadForm()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Subir Nuevo Protocolo</h2>
+        <button type="button" class="icon-button" title="Cerrar" (click)="closeUploadForm()">
+          <span class="material-icons-outlined">close</span>
+        </button>
+      </div>
+
+      <form (ngSubmit)="submitUpload()">
+        <label for="title">Título</label>
+        <input id="title" name="title" type="text" [(ngModel)]="uploadForm.title" />
+
+        <label for="category">Categoría</label>
+        <select id="category" name="category" [(ngModel)]="uploadForm.category">
+          <option value="laws">Leyes y Normativas</option>
+          <option value="manuals">Manuales de Usuario</option>
+          <option value="compliance">Cumplimiento (Compliance)</option>
+          <option value="minutes">Actas de Asamblea</option>
+        </select>
+
+        <label for="description">Descripción</label>
+        <textarea
+          id="description"
+          name="description"
+          rows="4"
+          [(ngModel)]="uploadForm.description">
+        </textarea>
+
+        <label for="file">Archivo</label>
+        <input id="file" name="file" type="file" (change)="onFileSelected($event)" />
+
+        @if (uploadMessage) {
+          <div class="form-message">{{ uploadMessage }}</div>
+        }
+
+        <div class="modal-actions">
+          <button type="button" class="secondary-button" (click)="closeUploadForm()">Cancelar</button>
+          <button type="submit" class="primary-button">Guardar protocolo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

@@ -49,6 +49,36 @@ export const routes: Routes = [
             .then(m => m.CommunityWall)
       },
       {
+        path: 'documentation',
+        loadComponent: () =>
+          import('./features/documentation/pages/documentation-center/documentation-center')
+            .then(m => m.DocumentationCenter)
+      },
+      {
+        path: 'smart-iot',
+        loadComponent: () =>
+          import('./features/smart-iot/pages/smart-iot-dashboard/smart-iot-dashboard')
+            .then(m => m.SmartIotDashboard)
+      },
+      {
+        path: 'smart-iot/access-control',
+        loadComponent: () =>
+          import('./features/smart-iot/pages/iot-access-control/iot-access-control')
+            .then(m => m.IotAccessControl)
+      },
+      {
+        path: 'smart-iot/lighting',
+        loadComponent: () =>
+          import('./features/smart-iot/pages/iot-lighting/iot-lighting')
+            .then(m => m.IotLighting)
+      },
+      {
+        path: 'smart-iot/irrigation',
+        loadComponent: () =>
+          import('./features/smart-iot/pages/iot-irrigation/iot-irrigation')
+            .then(m => m.IotIrrigation)
+      },
+      {
         path: 'settings',
         loadComponent: () =>
           import('./core/settings/settings')
