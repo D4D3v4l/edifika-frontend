@@ -19,13 +19,6 @@
     </button>
   </div>
 
-  @if (isDemo) {
-    <div class="demo-banner">
-      Datos de demostración. Los documentos y contactos son ficticios; no representan
-      documentación real del edificio.
-    </div>
-  }
-
   @if (!canUploadDocuments) {
     <div class="info-banner">
       Tu rol actual permite consultar documentos, pero no subir, editar ni eliminar archivos.
