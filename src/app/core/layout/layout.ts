@@ -21,6 +21,8 @@ export class Layout {
     { label: 'Common Areas', icon: 'deck', route: '/app/common-areas' },
     { label: 'Finance', icon: 'account_balance_wallet', route: '/app/finance' },
     { label: 'Community Wall', icon: 'forum', route: '/app/community-wall' },
+    { label: 'Documentación', icon: 'folder_open', route: '/app/documentation' },
+    { label: 'SmartIOT', icon: 'sensors', route: '/app/smart-iot' },
   ];
 
   logout(): void {
